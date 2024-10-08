@@ -1,0 +1,40 @@
+name: Deployment
+on:
+  push:
+    branches:
+      - main
+      - dev
+env: # workflow specific - globally accessible
+  MONGODB_USERNAME: mayanknagora
+  MONGODB_PASSWORD: 9EY7FhWtXHyQmzmC
+jobs:
+  test:
+    env: # job specific - locally accessible
+      MONGODB_CLUSTER_ADDRESS: github-actions.iqulu.mongodb.net
+      MONGODB_DB_NAME: github-actions
+      PORT: 8080
+    environment: testing
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Code
+        uses: actions/checkout@v3
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: npm-deps-${{ hashFiles('**/package-lock.json') }}
+      - name: Install dependencies
+        run: npm ci
+      - name: Run server
+        run: npm start & npx wait-on http://127.0.0.1:$PORT
+      - name: Run tests
+        run: npm test
+      - name: Output information
+        run: echo "Listening on port $PORT..."
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Output information
+        run: |
+          echo "Deploying..."
